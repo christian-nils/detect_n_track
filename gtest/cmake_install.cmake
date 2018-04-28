@@ -34,7 +34,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/home/christian-nils/CN/Program/c++/detect_track/gtest/gtest/cmake_install.cmake")
+  include("/home/christian-nils/CN/Program/c++/detect_n_track/gtest/gtest/cmake_install.cmake")
 
 endif()
 

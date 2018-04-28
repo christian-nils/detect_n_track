@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/christian-nils/CN/Program/c++/detect_track
+CMAKE_SOURCE_DIR = /home/christian-nils/CN/Program/c++/detect_n_track
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/christian-nils/CN/Program/c++/detect_track
+CMAKE_BINARY_DIR = /home/christian-nils/CN/Program/c++/detect_n_track
 
 # Utility rule file for _catkin_empty_exported_target.
 
@@ -67,6 +67,6 @@ CMakeFiles/_catkin_empty_exported_target.dir/clean:
 .PHONY : CMakeFiles/_catkin_empty_exported_target.dir/clean
 
 CMakeFiles/_catkin_empty_exported_target.dir/depend:
-	cd /home/christian-nils/CN/Program/c++/detect_track && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/christian-nils/CN/Program/c++/detect_track /home/christian-nils/CN/Program/c++/detect_track /home/christian-nils/CN/Program/c++/detect_track /home/christian-nils/CN/Program/c++/detect_track /home/christian-nils/CN/Program/c++/detect_track/CMakeFiles/_catkin_empty_exported_target.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/christian-nils/CN/Program/c++/detect_n_track && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/christian-nils/CN/Program/c++/detect_n_track /home/christian-nils/CN/Program/c++/detect_n_track /home/christian-nils/CN/Program/c++/detect_n_track /home/christian-nils/CN/Program/c++/detect_n_track /home/christian-nils/CN/Program/c++/detect_n_track/CMakeFiles/_catkin_empty_exported_target.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/_catkin_empty_exported_target.dir/depend
 

@@ -1,6 +1,6 @@
 # CMake generated Testfile for 
-# Source directory: /home/christian-nils/CN/Program/c++/detect_track
-# Build directory: /home/christian-nils/CN/Program/c++/detect_track
+# Source directory: /home/christian-nils/CN/Program/c++/detect_n_track
+# Build directory: /home/christian-nils/CN/Program/c++/detect_n_track
 # 
 # This file includes the relevant testing commands required for 
 # testing this directory and lists subdirectories to be tested as well.
