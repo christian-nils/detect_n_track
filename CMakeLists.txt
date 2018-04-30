@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 project(DETECT_TRACK)
-find_package(PCL 1.3 REQUIRED COMPONENTS common io visualization segmentation)
+find_package(PCL 1.3 REQUIRED COMPONENTS common io keypoints visualization segmentation)
 find_package(catkin REQUIRED)
 find_package(rosbag REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS} ${rosbag_INCLUDE_DIRS})

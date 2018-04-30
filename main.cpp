@@ -1,6 +1,5 @@
 #include <pcl/ModelCoefficients.h>
 #include <pcl/point_types.h>
-#include <pcl/io/pcd_io.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/normal_3d.h>
@@ -26,10 +25,10 @@ int main ()
 {
     // Initialize a bag variable
     rosbag::Bag bag;
-    // Open the bag
+    // Open the bag, the path should be changed, possibly add the filename as an argument for the program
     bag.open("/home/christian-nils/CN/Program/python/test3/2018-03-21-12-48-27_0.bag", rosbag::bagmode::Read);
 
-    // Declare the topics to read from
+    // Declare the topics to read from (should be changed if another rosbag is used)
     std::string imu_topic = "/imu/data"; //imu topic name
     std::string scan_topic = "/scan"; // scan topic name
 
@@ -44,11 +43,16 @@ int main ()
     // Declare the iterator of the imu_view
     rosbag::View::iterator imu_iterator = imu_view.begin();
 
+    // Deactivate the warning messages print in the console
+    pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
+
     // Declare the different pointcloud variables (1 pcl for each laserscan data, 1 pcl representing the corrected pcl, 1 stacked pcl)
     pcl::PointCloud<pcl::PointXYZ>::Ptr Pcl_ptr (new pcl::PointCloud<pcl::PointXYZ>);
     Pcl_ptr->height = 1;
     Pcl_ptr->width = 1521;
     pcl::PointCloud<pcl::PointXYZ>::Ptr Pcl_rotated_ptr (new pcl::PointCloud<pcl::PointXYZ> ());
+    pcl::PointCloud<pcl::PointXYZ>::Ptr Pcl_rotated_car_ptr (new pcl::PointCloud<pcl::PointXYZ> ());
+    pcl::PointCloud<pcl::PointXYZ>::Ptr Pcl_rotated_tmp_car_ptr (new pcl::PointCloud<pcl::PointXYZ> ());
     pcl::PointCloud<pcl::PointXYZ>::Ptr Pcl_stacked_ptr (new pcl::PointCloud<pcl::PointXYZ> ());
 
     // Declare inlier variable use to remove the points outside the road
@@ -76,9 +80,9 @@ int main ()
     seg.setDistanceThreshold (1);
 
     // declaration of couple of other variables
-    int inc;
+    int inc, n_car = 1;
     int curr_ind;
-    float ground_line_angle;
+    float ground_line_angle, ground_line_angle_old;
     bool not_initialized(true);
     float f = 20; // laserscan update frequency [Hz]
 
@@ -100,7 +104,7 @@ int main ()
     It will look for the message that is within 0.005s away from the Scan message*/
     foreach(rosbag::MessageInstance const m, scan_view)
     {
-        if (m.getTime()>scan_view.getBeginTime()+ros::Duration(400, 0)) // to delay the start Duration(s, ns)
+        if (m.getTime()>scan_view.getBeginTime()+ros::Duration(600, 0)) // to delay the start Duration(s, ns)
         {
             // instantiate the laser scan message
             sensor_msgs::LaserScan::ConstPtr laser = m.instantiate<sensor_msgs::LaserScan>();
@@ -124,7 +128,7 @@ int main ()
 
             // reset the increment variable used for populating the PCL variable
             inc = 0;
-             // clear the previous points
+            // clear the previous points
             Pcl_ptr->points.clear();
             foreach(float range, laser->ranges)
             {
@@ -139,7 +143,7 @@ int main ()
             Pcl_ptr->width = Pcl_ptr->points.size();
             // Rectify the orientation of the pointcloud to have the longitudinal orientation along x, and the lateral orientation along y
             pcl::transformPointCloud(*Pcl_ptr, *Pcl_rotated_ptr, Eigen::Vector3f(0,0,.1004), rectifyYaw * curr_ori * imu2laser);
-            /* Removed the that are outside the road (points with lateral distance <0 and >8) and points that are below a -0.4 z
+            /* Keep only the points that are inside the road (points with lateral distance >0 and <8) and points that are above a -0.4 z
             that correspond to point belonging to the road */
             // Reset the current point indice to 0
             curr_ind = 0;
@@ -160,32 +164,61 @@ int main ()
             extract.setNegative(true);
             extract.filterDirectly(Pcl_rotated_ptr);
 
-            /* FIXME: the line detection algorithm, below, has to be fixed. It may be that there is more than 1 line present
-            in the current pcl and therefore a while loop would be necessary here */
-
             /*   Remove the ground line, all detected line with an angle between 15 and 75 degrees are removed from the pcl */
             seg.setInputCloud(Pcl_rotated_ptr);
             seg.segment(*ground_inliers, *line_coefficients);
+
+            // Reset points in the car pcl
+            Pcl_rotated_car_ptr->points.clear();
             // calculate the angle from the y axis, the line with an angle comprises between 15 and 75 is removed from the pcl
             ground_line_angle = fabs(atan(line_coefficients->values[4]/line_coefficients->values[3])*180/M_PI);
-            if ( 15 < ground_line_angle && ground_line_angle < 75 )
+            if ( 15 > ground_line_angle || ground_line_angle > 75 )
             {
                 extract.setIndices(ground_inliers);
-                extract.setNegative(true);
-                extract.filterDirectly(Pcl_rotated_ptr);
-
+                extract.setNegative(false);
+                extract.filter(*Pcl_rotated_car_ptr);
+                std::cout << n_car << ". Car line detected!" << std::endl;
+                n_car++;
             }
+            // Take away the points from the original PCL
+            extract.setNegative(true);
+            extract.filter(*Pcl_rotated_ptr);
 
-            /*  appending the previous transformed pcl only if the number of points did not reach 10000 */
+            ground_line_angle = fabs(atan(line_coefficients->values[4]/line_coefficients->values[3])*180/M_PI);
+            while (!isnan(ground_line_angle)){
+                seg.segment(*ground_inliers, *line_coefficients);
+                // calculate the angle from the y axis, the line with an angle comprises between 15 and 75 is removed from the pcl
+                ground_line_angle_old = ground_line_angle;
+                ground_line_angle = fabs(atan(line_coefficients->values[4]/line_coefficients->values[3])*180/M_PI);
+                if (ground_line_angle == ground_line_angle_old)
+                    break;
+                if ( 15 > ground_line_angle || ground_line_angle > 75 )
+                {
+                    extract.setIndices(ground_inliers);
+                    extract.setNegative(false);
+                    extract.filter(*Pcl_rotated_tmp_car_ptr);
+                    foreach (pcl::PointXYZ point, Pcl_rotated_tmp_car_ptr->points){
+                    // copy the points to the general car pcl
+                        Pcl_rotated_car_ptr->points.push_back(point);
+                    }
+                    std::cout << n_car << ". Car line detected!" << std::endl;
+                    n_car++;
+                }
+                // Take away the points from the original PCL
+                extract.setNegative(true);
+                extract.filter(*Pcl_rotated_ptr);
+            }
+            /*  appending the previous transformed pcl only if the number of points did not reach 100000 */
             if (Pcl_stacked_ptr->points.size()>100000)
             {
                 Pcl_stacked_ptr->points.clear();
             }
-            foreach (pcl::PointXYZ pts, Pcl_rotated_ptr->points)
+            foreach (pcl::PointXYZ pts, Pcl_rotated_car_ptr->points)
             {
                 Pcl_stacked_ptr->points.push_back(pts);
+                /*if (!isnan(pts.y))
+                    std::cout << pts.y << std::endl;*/
             }
-
 
             if (not_initialized)
             {
